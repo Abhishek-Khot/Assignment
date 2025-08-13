@@ -1,16 +1,13 @@
 import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
-  User,
   Package,
   BarChart3,
   Upload,
-  FileText,
-  LogOut,
-  Menu,
-  X,
-  Settings,
   History,
+  Settings,
+  LogOut,
+  X,
 } from "lucide-react";
 
 const Sidebar = ({ isOpen, setIsOpen }) => {
@@ -23,13 +20,6 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   };
 
   const menuItems = [
-    {
-      name: "Profile",
-      icon: User,
-      path: "/dashboard",
-      color: "text-blue-400",
-      bgColor: "bg-blue-500/10",
-    },
     {
       name: "Products",
       icon: Package,
@@ -47,7 +37,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     {
       name: "Smart Upload",
       icon: Upload,
-      path: "/upload",
+      path: "/smart-upload",
       color: "text-cyan-400",
       bgColor: "bg-cyan-500/10",
     },
@@ -61,7 +51,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     {
       name: "Settings",
       icon: Settings,
-      path: "/dashboard/settings",
+      path: "/dashboard",
       color: "text-gray-400",
       bgColor: "bg-gray-500/10",
     },
@@ -77,9 +67,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         />
       )}
 
-      {/* Sidebar */}
+      {/* Sidebar (full height with flex column) */}
       <div
-        className={`fixed left-0 top-0 h-full w-64 bg-[#1A1A1A] border-r border-[#333333] transform transition-transform duration-300 ease-in-out z-50 ${
+        className={`fixed left-0 top-0 h-screen w-64 bg-[#1A1A1A] border-r border-[#333333] transform transition-transform duration-300 ease-in-out z-50 flex flex-col ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         } lg:translate-x-0 lg:static lg:z-auto`}
       >
@@ -99,8 +89,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4">
+        {/* Navigation (scrollable if content overflows) */}
+        <nav className="flex-1 overflow-y-auto p-4">
           <ul className="space-y-2">
             {menuItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -131,8 +121,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           </ul>
         </nav>
 
-        {/* Logout */}
-        <div className="p-4 border-t border-[#333333]">
+        {/* Logout (fixed at the bottom) */}
+        <div className="p-4 border-t border-[#333333] mt-auto">
           <button
             onClick={handleLogout}
             className="flex items-center space-x-3 px-4 py-3 rounded-lg text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-all duration-200 w-full"

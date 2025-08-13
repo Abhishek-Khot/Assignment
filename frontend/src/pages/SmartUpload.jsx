@@ -12,7 +12,7 @@ const SmartUpload = () => {
   const [dragActive, setDragActive] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [saving, setSaving] = useState(false);
-  
+
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   const navigate = useNavigate();
 
@@ -21,7 +21,8 @@ const SmartUpload = () => {
   const UPLOAD_PRESET = "product_images";
 
   // Initialize Gemini AI
-  const genAI = new GoogleGenerativeAI("AIzaSyDhkVXQOQWJGKJGKJGKJGKJGKJGKJGKJGK"); // Replace with your actual API key
+  // const genAI = new GoogleGenerativeAI(process.env.VITE_GEN_AI_API_KEY); // Replace with your actual API key
+  const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEN_AI_API_KEY);
 
   const handleImageUpload = async (file) => {
     if (!file) return;
@@ -63,19 +64,19 @@ const SmartUpload = () => {
 
   const analyzeImage = async (imageUrl) => {
     setAnalyzing(true);
-    
+
     try {
       // Convert image to base64 for Gemini
       const response = await fetch(imageUrl);
       const blob = await response.blob();
       const base64 = await new Promise((resolve) => {
         const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onloadend = () => resolve(reader.result.split(",")[1]);
         reader.readAsDataURL(blob);
       });
 
       const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
-      
+
       const prompt = `Analyze this product image and provide detailed information in JSON format with the following structure:
       {
         "name": "Product name",
@@ -98,13 +99,13 @@ const SmartUpload = () => {
         {
           inlineData: {
             mimeType: blob.type,
-            data: base64
-          }
-        }
+            data: base64,
+          },
+        },
       ]);
 
       const responseText = result.response.text();
-      
+
       // Extract JSON from the response
       const jsonMatch = responseText.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
@@ -113,11 +114,12 @@ const SmartUpload = () => {
       } else {
         throw new Error("Could not parse AI response");
       }
-      
     } catch (error) {
       console.error("Analysis error:", error);
-      alert("Failed to analyze image. Please try again or fill details manually.");
-      
+      alert(
+        "Failed to analyze image. Please try again or fill details manually."
+      );
+
       // Fallback analysis
       setAnalysisResult({
         name: "Product Analysis Failed",
@@ -127,8 +129,8 @@ const SmartUpload = () => {
         attributes: {
           color: "Unknown",
           material: "Unknown",
-          condition: "Unknown"
-        }
+          condition: "Unknown",
+        },
       });
     } finally {
       setAnalyzing(false);
@@ -149,7 +151,7 @@ const SmartUpload = () => {
         ...analysisResult.attributes,
         category: analysisResult.category,
         aiGenerated: true,
-        analyzedAt: new Date().toISOString()
+        analyzedAt: new Date().toISOString(),
       },
     };
 
@@ -231,7 +233,9 @@ const SmartUpload = () => {
                     ? "border-[#00BFFF] bg-[#00BFFF]/10"
                     : "border-[#333333] hover:border-[#00BFFF]/50"
                 }`}
-                onClick={() => document.getElementById("smartImageInput").click()}
+                onClick={() =>
+                  document.getElementById("smartImageInput").click()
+                }
               >
                 <input
                   id="smartImageInput"
@@ -256,7 +260,8 @@ const SmartUpload = () => {
                         Drop your product image here
                       </p>
                       <p className="text-gray-400">
-                        or <span className="text-[#00BFFF]">click to browse</span>
+                        or{" "}
+                        <span className="text-[#00BFFF]">click to browse</span>
                       </p>
                       <p className="text-gray-500 text-sm mt-2">
                         Supports PNG, JPG, GIF up to 10MB
@@ -303,7 +308,10 @@ const SmartUpload = () => {
 
                   {analyzing ? (
                     <div className="bg-[#222222] rounded-lg p-6 border border-[#333333] text-center">
-                      <Loader className="animate-spin text-[#00BFFF] mx-auto mb-4" size={32} />
+                      <Loader
+                        className="animate-spin text-[#00BFFF] mx-auto mb-4"
+                        size={32}
+                      />
                       <p className="text-[#00BFFF] font-medium">
                         Analyzing your product...
                       </p>
@@ -321,7 +329,10 @@ const SmartUpload = () => {
                           type="text"
                           value={analysisResult.name}
                           onChange={(e) =>
-                            setAnalysisResult(prev => ({ ...prev, name: e.target.value }))
+                            setAnalysisResult((prev) => ({
+                              ...prev,
+                              name: e.target.value,
+                            }))
                           }
                           className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
                         />
@@ -334,7 +345,10 @@ const SmartUpload = () => {
                         <textarea
                           value={analysisResult.description}
                           onChange={(e) =>
-                            setAnalysisResult(prev => ({ ...prev, description: e.target.value }))
+                            setAnalysisResult((prev) => ({
+                              ...prev,
+                              description: e.target.value,
+                            }))
                           }
                           rows="3"
                           className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
@@ -350,7 +364,10 @@ const SmartUpload = () => {
                             type="text"
                             value={analysisResult.companyName}
                             onChange={(e) =>
-                              setAnalysisResult(prev => ({ ...prev, companyName: e.target.value }))
+                              setAnalysisResult((prev) => ({
+                                ...prev,
+                                companyName: e.target.value,
+                              }))
                             }
                             className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
                           />
@@ -364,7 +381,10 @@ const SmartUpload = () => {
                             type="text"
                             value={analysisResult.category}
                             onChange={(e) =>
-                              setAnalysisResult(prev => ({ ...prev, category: e.target.value }))
+                              setAnalysisResult((prev) => ({
+                                ...prev,
+                                category: e.target.value,
+                              }))
                             }
                             className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
                           />
@@ -377,31 +397,43 @@ const SmartUpload = () => {
                           Detected Attributes
                         </label>
                         <div className="space-y-2">
-                          {Object.entries(analysisResult.attributes || {}).map(([key, value]) => (
-                            <div key={key} className="flex gap-2">
-                              <input
-                                type="text"
-                                value={key}
-                                onChange={(e) => {
-                                  const newAttributes = { ...analysisResult.attributes };
-                                  delete newAttributes[key];
-                                  newAttributes[e.target.value] = value;
-                                  setAnalysisResult(prev => ({ ...prev, attributes: newAttributes }));
-                                }}
-                                className="flex-1 px-2 py-1 bg-[#1A1A1A] border border-[#333333] rounded text-white text-sm"
-                              />
-                              <input
-                                type="text"
-                                value={value}
-                                onChange={(e) => {
-                                  const newAttributes = { ...analysisResult.attributes };
-                                  newAttributes[key] = e.target.value;
-                                  setAnalysisResult(prev => ({ ...prev, attributes: newAttributes }));
-                                }}
-                                className="flex-1 px-2 py-1 bg-[#1A1A1A] border border-[#333333] rounded text-white text-sm"
-                              />
-                            </div>
-                          ))}
+                          {Object.entries(analysisResult.attributes || {}).map(
+                            ([key, value]) => (
+                              <div key={key} className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={key}
+                                  onChange={(e) => {
+                                    const newAttributes = {
+                                      ...analysisResult.attributes,
+                                    };
+                                    delete newAttributes[key];
+                                    newAttributes[e.target.value] = value;
+                                    setAnalysisResult((prev) => ({
+                                      ...prev,
+                                      attributes: newAttributes,
+                                    }));
+                                  }}
+                                  className="flex-1 px-2 py-1 bg-[#1A1A1A] border border-[#333333] rounded text-white text-sm"
+                                />
+                                <input
+                                  type="text"
+                                  value={value}
+                                  onChange={(e) => {
+                                    const newAttributes = {
+                                      ...analysisResult.attributes,
+                                    };
+                                    newAttributes[key] = e.target.value;
+                                    setAnalysisResult((prev) => ({
+                                      ...prev,
+                                      attributes: newAttributes,
+                                    }));
+                                  }}
+                                  className="flex-1 px-2 py-1 bg-[#1A1A1A] border border-[#333333] rounded text-white text-sm"
+                                />
+                              </div>
+                            )
+                          )}
                         </div>
                       </div>
 

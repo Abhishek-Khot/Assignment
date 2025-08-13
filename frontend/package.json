@@ -22,6 +22,7 @@
     "class-variance-authority": "^0.7.0",
     "classnames": "^2.5.1",
     "dayjs": "^1.11.13",
+    "dotenv": "^17.2.1",
     "face-api.js": "^0.22.2",
     "gsap": "^3.13.0",
     "jspdf": "^3.0.1",
