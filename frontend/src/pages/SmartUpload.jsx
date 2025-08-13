@@ -62,7 +62,7 @@ const SmartUpload = () => {
     }
   };
 
-  const analyzeImage = async (imageUrl) => {
+  const analyzeImage = async (imageUrl, retries = 3, delay = 1000) => {
     setAnalyzing(true);
 
     try {

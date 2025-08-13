@@ -115,7 +115,7 @@ const Upload = () => {
         setImageUrl("");
         setCompanyName("");
         setAttributes({});
-        navigate("/dashboard");
+        navigate("/dashboard/products");
       } else {
         alert("Failed to create product");
       }
