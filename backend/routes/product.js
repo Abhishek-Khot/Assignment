@@ -51,6 +51,14 @@ router.put("/products/:id", async (req, res) => {
 // Delete a product
 router.delete("/products/:id", async (req, res) => {
   try {
+    // TODO: Implement Cloudinary deletion here
+    // You'll need to add cloudinary deletion logic
+    // const cloudinary = require('cloudinary').v2;
+    // if (product.imageUrl) {
+    //   const publicId = extractPublicIdFromUrl(product.imageUrl);
+    //   await cloudinary.uploader.destroy(publicId);
+    // }
+    
     const product = await Product.findByIdAndDelete(req.params.id);
     if (!product) return res.status(404).json({ error: "Product not found" });
     res.json({ message: "Product deleted successfully", product });
