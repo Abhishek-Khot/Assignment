@@ -6,6 +6,7 @@ const productSchema = new mongoose.Schema({
   imageUrl: String,
   companyName: { type: String, default: "xyz" },
   attributes: Object, // For dynamic/conditional form fields
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   createdAt: { type: Date, default: Date.now },
 });
 

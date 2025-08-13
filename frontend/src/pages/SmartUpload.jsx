@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Sparkles, Upload, Image as ImageIcon, Loader } from "lucide-react";
@@ -28,11 +29,12 @@ const SmartUpload = () => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      toast.error("Please select an image file");
       return;
     }
 
     setUploading(true);
+    const loadingToast = toast.loading("Uploading image...");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -50,13 +52,17 @@ const SmartUpload = () => {
 
       if (data.secure_url) {
         setImageUrl(data.secure_url);
+        toast.dismiss(loadingToast);
+        toast.success("Image uploaded successfully!");
         await analyzeImage(data.secure_url);
       } else {
-        alert("Upload failed! Please check your upload preset configuration.");
+        toast.dismiss(loadingToast);
+        toast.error("Upload failed! Please check your upload preset configuration.");
       }
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Upload failed! Please try again.");
+      toast.dismiss(loadingToast);
+      toast.error("Upload failed! Please try again.");
     } finally {
       setUploading(false);
     }
@@ -64,6 +70,7 @@ const SmartUpload = () => {
 
   const analyzeImage = async (imageUrl, retries = 3, delay = 1000) => {
     setAnalyzing(true);
+    const loadingToast = toast.loading("AI is analyzing your product...");
 
     try {
       // Convert image to base64 for Gemini
@@ -111,14 +118,15 @@ const SmartUpload = () => {
       if (jsonMatch) {
         const analysisData = JSON.parse(jsonMatch[0]);
         setAnalysisResult(analysisData);
+        toast.dismiss(loadingToast);
+        toast.success("AI analysis completed successfully!");
       } else {
         throw new Error("Could not parse AI response");
       }
     } catch (error) {
       console.error("Analysis error:", error);
-      alert(
-        "Failed to analyze image. Please try again or fill details manually."
-      );
+      toast.dismiss(loadingToast);
+      toast.error("Failed to analyze image. Please try again or fill details manually.");
 
       // Fallback analysis
       setAnalysisResult({
@@ -140,13 +148,21 @@ const SmartUpload = () => {
   const handleSaveProduct = async () => {
     if (!analysisResult) return;
 
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      toast.error("Please log in to save products");
+      navigate("/login");
+      return;
+    }
     setSaving(true);
+    const loadingToast = toast.loading("Saving AI-analyzed product...");
 
     const productData = {
       name: analysisResult.name,
       description: analysisResult.description,
       imageUrl: imageUrl,
       companyName: analysisResult.companyName,
+      userId,
       attributes: {
         ...analysisResult.attributes,
         category: analysisResult.category,
@@ -165,14 +181,17 @@ const SmartUpload = () => {
       );
 
       if (response.status === 201) {
-        alert("Product created successfully with AI analysis!");
+        toast.dismiss(loadingToast);
+        toast.success("Product created successfully with AI analysis!");
         navigate("/dashboard/products");
       } else {
-        alert("Failed to create product");
+        toast.dismiss(loadingToast);
+        toast.error("Failed to create product");
       }
     } catch (err) {
       console.error("Error:", err);
-      alert("An error occurred while creating the product");
+      toast.dismiss(loadingToast);
+      toast.error("An error occurred while creating the product");
     } finally {
       setSaving(false);
     }

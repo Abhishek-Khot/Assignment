@@ -62,13 +62,19 @@ const signup = require("./routes/signup");
 const login = require("./routes/login");
 const productRoutes = require("./routes/product");
 const reportRoutes = require("./routes/report");
+const analyticsRoutes = require("./routes/analytics");
+const exportRoutes = require("./routes/export");
 
 // Use routes
 app.use(signup);
 app.use(login);
 app.use(productRoutes);
 app.use(reportRoutes);
+app.use(analyticsRoutes);
+app.use(exportRoutes);
 
+// Serve static files from uploads directory
+app.use('/uploads', express.static('uploads'));
 // Test route for users
 app.get("/", async (req, res) => {
   try {
