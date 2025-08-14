@@ -3,22 +3,11 @@ const app = express();
 const mongoose = require("mongoose");
 require("dotenv").config();
 const cors = require("cors");
-const User = require("./models/User"); // adjust path as needed
+// const User = require("./models/User"); // adjust path as needed
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-
-// const corsOptions = {
-//   origin: [
-//     process.env.FRONTEND_URL,
-//     "http://localhost:5173",
-//     // "https://smartrecruit.vercel.app", // for quick testing purpose included this hardcoded urls
-//   ],
-//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-//   allowedHeaders: ["Content-Type", "Authorization", "multipart/form-data"],
-// };
-// app.use(cors(corsOptions));
 
 app.use(
   cors({
@@ -84,16 +73,17 @@ app.use(exportRoutes);
 // Serve static files from uploads directory
 app.use("/uploads", express.static("uploads"));
 // Test route for users
-app.get("/", async (req, res) => {
-  try {
-    const users = await User.find();
-    res.json(users);
-  } catch (error) {
-    res.send("Error, check console");
-    console.error("Error fetching users:", error);
-    res.status(500).json({ error: "Internal Server Error" });
-  }
-});
+// app.get("/", async (req, res) => {
+//   try {
+//     const users = await User.find();
+//     console.log("Users fetched:", users);
+//     res.json(users);
+//   } catch (error) {
+//     res.send("Error, check console");
+//     console.error("Error fetching users:", error);
+//     res.status(500).json({ error: "Internal Server Error" });
+//   }
+// });
 
 // Server setup
 const PORT = process.env.PORT || 3000;
