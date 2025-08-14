@@ -3,6 +3,7 @@ const app = express();
 const mongoose = require("mongoose");
 require("dotenv").config();
 const cors = require("cors");
+const User = require("./models/User"); // adjust path as needed
 
 app.use(cors());
 app.use(express.urlencoded({ extended: true }));
