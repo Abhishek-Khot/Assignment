@@ -55,14 +55,24 @@ const Navbar = () => {
 
           {/* Right side buttons */}
           {isEmail ? (
-            <Link to={"/dashboard"}>
-              <Button
-                type="submit"
-                className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 px-4 py-2 rounded-md text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
-              >
-                Dashboard
-              </Button>
-            </Link>
+            <div className="flex items-center space-x-4">
+              <Link to={"/smart-upload"}>
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-green-500 to-emerald-500 px-4 py-2 rounded-md text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+                >
+                  Smart Upload
+                </Button>
+              </Link>
+              <Link to={"/dashboard/products"}>
+                <Button
+                  type="submit"
+                  className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 px-4 py-2 rounded-md text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
+                >
+                  Dashboard
+                </Button>
+              </Link>
+            </div>
           ) : (
             <div className="flex items-center space-x-4">
               <Link to={"/login"}>
