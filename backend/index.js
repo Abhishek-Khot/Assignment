@@ -21,11 +21,7 @@ app.use(express.json());
 
 app.use(
   cors({
-    origin: [
-      process.env.FRONTEND_URL,
-      "http://localhost:5173",
-      // "https://smartrecruit.vercel.app", // for quick testing purpose included this hardcoded urls
-    ],
+    origin: [process.env.FRONTEND_URL, "http://localhost:5173"],
     credentials: true,
   })
 );
