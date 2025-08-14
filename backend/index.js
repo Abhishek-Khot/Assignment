@@ -8,16 +8,27 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const corsOptions = {
-  origin: [
-    process.env.FRONTEND_URL,
-    "http://localhost:5173",
-    // "https://smartrecruit.vercel.app", // for quick testing purpose included this hardcoded urls
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "multipart/form-data"],
-};
-app.use(cors(corsOptions));
+// const corsOptions = {
+//   origin: [
+//     process.env.FRONTEND_URL,
+//     "http://localhost:5173",
+//     // "https://smartrecruit.vercel.app", // for quick testing purpose included this hardcoded urls
+//   ],
+//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+//   allowedHeaders: ["Content-Type", "Authorization", "multipart/form-data"],
+// };
+// app.use(cors(corsOptions));
+
+app.use(
+  cors({
+    origin: [
+      process.env.FRONTEND_URL,
+      "http://localhost:5173",
+      // "https://smartrecruit.vercel.app", // for quick testing purpose included this hardcoded urls
+    ],
+    credentials: true,
+  })
+);
 
 // Connect to MongoDB
 main()
@@ -62,13 +73,19 @@ const signup = require("./routes/signup");
 const login = require("./routes/login");
 const productRoutes = require("./routes/product");
 const reportRoutes = require("./routes/report");
+const analyticsRoutes = require("./routes/analytics");
+const exportRoutes = require("./routes/export");
 
 // Use routes
 app.use(signup);
 app.use(login);
 app.use(productRoutes);
 app.use(reportRoutes);
+app.use(analyticsRoutes);
+app.use(exportRoutes);
 
+// Serve static files from uploads directory
+app.use("/uploads", express.static("uploads"));
 // Test route for users
 app.get("/", async (req, res) => {
   try {

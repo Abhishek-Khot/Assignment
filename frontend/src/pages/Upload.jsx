@@ -1,6 +1,7 @@
 import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 
 const Upload = () => {
@@ -15,19 +16,20 @@ const Upload = () => {
   const navigate = useNavigate();
 
   // Cloudinary configuration
-  const CLOUD_NAME = "dvaemcnki";
-  const UPLOAD_PRESET = "product_images"; // Replace with your actual upload preset
+  const CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME;
+  const UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_PRESET;
 
   const handleImageUpload = async (file) => {
     if (!file) return;
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      toast.error("Please select an image file");
       return;
     }
 
     setUploading(true);
+    const loadingToast = toast.loading("Uploading image...");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -45,12 +47,18 @@ const Upload = () => {
 
       if (data.secure_url) {
         setImageUrl(data.secure_url);
+        toast.dismiss(loadingToast);
+        toast.success("Image uploaded successfully!");
       } else {
-        alert("Upload failed! Please check your upload preset configuration.");
+        toast.dismiss(loadingToast);
+        toast.error(
+          "Upload failed! Please check your upload preset configuration."
+        );
       }
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Upload failed! Please try again.");
+      toast.dismiss(loadingToast);
+      toast.error("Upload failed! Please try again.");
     } finally {
       setUploading(false);
     }
@@ -86,18 +94,26 @@ const Upload = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !companyName) {
-      alert("Product name and company name are required!");
+      toast.error("Product name and company name are required!");
       return;
     }
 
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      toast.error("Please log in to add products");
+      navigate("/login");
+      return;
+    }
     const productData = {
       name,
       description,
       imageUrl,
       companyName,
       attributes,
+      userId,
     };
 
+    const loadingToast = toast.loading("Creating product...");
     try {
       const response = await axios.post(
         `${BACKEND_URL}/products`,
@@ -108,7 +124,8 @@ const Upload = () => {
       );
 
       if (response.status === 201) {
-        alert("Product created successfully!");
+        toast.dismiss(loadingToast);
+        toast.success("Product created successfully!");
         // Reset form
         setName("");
         setDescription("");
@@ -117,11 +134,13 @@ const Upload = () => {
         setAttributes({});
         navigate("/dashboard/products");
       } else {
-        alert("Failed to create product");
+        toast.dismiss(loadingToast);
+        toast.error("Failed to create product");
       }
     } catch (err) {
       console.error("Error:", err);
-      alert("An error occurred while creating the product");
+      toast.dismiss(loadingToast);
+      toast.error("An error occurred while creating the product");
     }
   };
 

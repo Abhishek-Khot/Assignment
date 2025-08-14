@@ -5,7 +5,9 @@ const Product = require("../models/productModel");
 // Get all products
 router.get("/products", async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const userId = req.query.userId;
+    const query = userId ? { userId } : {};
+    const products = await Product.find(query).populate('userId', 'name email').sort({ createdAt: -1 });
     res.json(products);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -15,6 +17,9 @@ router.get("/products", async (req, res) => {
 // Create a new product
 router.post("/products", async (req, res) => {
   try {
+    if (!req.body.userId) {
+      return res.status(400).json({ error: "User ID is required" });
+    }
     const product = new Product(req.body);
     await product.save();
     res.status(201).json(product);

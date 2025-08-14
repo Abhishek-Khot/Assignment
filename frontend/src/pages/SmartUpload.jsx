@@ -1,9 +1,19 @@
 import axios from "axios";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import Navbar from "../components/Navbar";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { Sparkles, Upload, Image as ImageIcon, Loader } from "lucide-react";
+// import { Sparkles, Upload, Image as ImageIcon, Loader } from "lucide-react";
+import Sidebar from "../components/Sidebar";
+import {
+  Sparkles,
+  Upload,
+  Image as ImageIcon,
+  Loader,
+  Menu,
+  Trash2,
+} from "lucide-react";
 
 const SmartUpload = () => {
   const [imageUrl, setImageUrl] = useState("");
@@ -12,27 +22,28 @@ const SmartUpload = () => {
   const [dragActive, setDragActive] = useState(false);
   const [analysisResult, setAnalysisResult] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
   const navigate = useNavigate();
 
   // Cloudinary configuration
-  const CLOUD_NAME = "dvaemcnki";
-  const UPLOAD_PRESET = "product_images";
+  const CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME;
+  const UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_PRESET;
 
   // Initialize Gemini AI
-  // const genAI = new GoogleGenerativeAI(process.env.VITE_GEN_AI_API_KEY); // Replace with your actual API key
   const genAI = new GoogleGenerativeAI(import.meta.env.VITE_GEN_AI_API_KEY);
 
   const handleImageUpload = async (file) => {
     if (!file) return;
 
     if (!file.type.startsWith("image/")) {
-      alert("Please select an image file");
+      toast.error("Please select an image file");
       return;
     }
 
     setUploading(true);
+    const loadingToast = toast.loading("Uploading image...");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -50,20 +61,27 @@ const SmartUpload = () => {
 
       if (data.secure_url) {
         setImageUrl(data.secure_url);
+        toast.dismiss(loadingToast);
+        toast.success("Image uploaded successfully!");
         await analyzeImage(data.secure_url);
       } else {
-        alert("Upload failed! Please check your upload preset configuration.");
+        toast.dismiss(loadingToast);
+        toast.error(
+          "Upload failed! Please check your upload preset configuration."
+        );
       }
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Upload failed! Please try again.");
+      toast.dismiss(loadingToast);
+      toast.error("Upload failed! Please try again.");
     } finally {
       setUploading(false);
     }
   };
 
-  const analyzeImage = async (imageUrl, retries = 3, delay = 1000) => {
+  const analyzeImage = async (imageUrl) => {
     setAnalyzing(true);
+    const loadingToast = toast.loading("AI is analyzing your product...");
 
     try {
       // Convert image to base64 for Gemini
@@ -111,12 +129,15 @@ const SmartUpload = () => {
       if (jsonMatch) {
         const analysisData = JSON.parse(jsonMatch[0]);
         setAnalysisResult(analysisData);
+        toast.dismiss(loadingToast);
+        toast.success("AI analysis completed successfully!");
       } else {
         throw new Error("Could not parse AI response");
       }
     } catch (error) {
       console.error("Analysis error:", error);
-      alert(
+      toast.dismiss(loadingToast);
+      toast.error(
         "Failed to analyze image. Please try again or fill details manually."
       );
 
@@ -140,13 +161,21 @@ const SmartUpload = () => {
   const handleSaveProduct = async () => {
     if (!analysisResult) return;
 
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      toast.error("Please log in to save products");
+      navigate("/login");
+      return;
+    }
     setSaving(true);
+    const loadingToast = toast.loading("Saving AI-analyzed product...");
 
     const productData = {
       name: analysisResult.name,
       description: analysisResult.description,
       imageUrl: imageUrl,
       companyName: analysisResult.companyName,
+      userId,
       attributes: {
         ...analysisResult.attributes,
         category: analysisResult.category,
@@ -165,14 +194,17 @@ const SmartUpload = () => {
       );
 
       if (response.status === 201) {
-        alert("Product created successfully with AI analysis!");
+        toast.dismiss(loadingToast);
+        toast.success("Product created successfully with AI analysis!");
         navigate("/dashboard/products");
       } else {
-        alert("Failed to create product");
+        toast.dismiss(loadingToast);
+        toast.error("Failed to create product");
       }
     } catch (err) {
       console.error("Error:", err);
-      alert("An error occurred while creating the product");
+      toast.dismiss(loadingToast);
+      toast.error("An error occurred while creating the product");
     } finally {
       setSaving(false);
     }
@@ -206,167 +238,162 @@ const SmartUpload = () => {
   };
 
   return (
-    <>
-      <Navbar />
-      <div className="min-h-screen flex items-center justify-center bg-[#0D0D0D] p-6">
-        <div className="w-full max-w-4xl bg-[#1A1A1A] rounded-xl border border-[#333333] overflow-hidden relative shadow-2xl">
-          {/* Header */}
-          <div className="bg-gradient-to-r from-[#00BFFF] to-[#1E90FF] px-6 py-4">
-            <h1 className="text-2xl font-bold text-white flex items-center justify-center gap-2">
-              <Sparkles className="animate-pulse" />
-              Smart AI Product Upload
-            </h1>
-            <p className="text-center text-blue-100 mt-1">
-              Upload an image and let AI analyze your product automatically
-            </p>
-          </div>
+    <div className="min-h-screen bg-[#0D0D0D] flex">
+      <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
 
-          <div className="p-6 space-y-6">
-            {/* Upload Section */}
-            {!imageUrl && (
-              <div
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                onDragLeave={handleDragLeave}
-                className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 cursor-pointer ${
-                  dragActive
-                    ? "border-[#00BFFF] bg-[#00BFFF]/10"
-                    : "border-[#333333] hover:border-[#00BFFF]/50"
-                }`}
-                onClick={() =>
-                  document.getElementById("smartImageInput").click()
-                }
-              >
-                <input
-                  id="smartImageInput"
-                  type="file"
-                  accept="image/*"
-                  onChange={handleFileSelect}
-                  className="hidden"
-                />
+      <div className="flex-1 lg:ml-0">
+        {/* Mobile Header */}
+        <div className="lg:hidden bg-[#1A1A1A] border-b border-[#333333] p-4">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="text-white hover:text-gray-300"
+          >
+            <Menu size={24} />
+          </button>
+        </div>
 
-                {uploading ? (
-                  <div className="space-y-4">
-                    <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#00BFFF] mx-auto"></div>
-                    <p className="text-[#00BFFF] text-lg">Uploading image...</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="bg-gradient-to-br from-[#00BFFF]/20 to-[#1E90FF]/20 rounded-full w-24 h-24 flex items-center justify-center mx-auto">
-                      <Upload className="text-[#00BFFF]" size={48} />
-                    </div>
-                    <div>
-                      <p className="text-white text-xl font-semibold mb-2">
-                        Drop your product image here
-                      </p>
-                      <p className="text-gray-400">
-                        or{" "}
-                        <span className="text-[#00BFFF]">click to browse</span>
-                      </p>
-                      <p className="text-gray-500 text-sm mt-2">
-                        Supports PNG, JPG, GIF up to 10MB
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
+        <div className="p-6">
+          <div className="max-w-7xl mx-auto space-y-6">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-[#1A1A1A] to-[#2A2A2A] rounded-xl border border-[#333333] p-6 relative overflow-hidden">
+              <div className="absolute inset-0 bg-gradient-to-r from-[#B266FF]/10 to-[#FF69B4]/10"></div>
+              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#B266FF] to-[#FF69B4]"></div>
 
-            {/* Analysis Section */}
-            {imageUrl && (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Image Preview */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <ImageIcon size={20} />
-                    Uploaded Image
-                  </h3>
-                  <div className="relative">
-                    <img
-                      src={imageUrl}
-                      alt="Uploaded product"
-                      className="w-full h-64 object-cover rounded-lg border border-[#333333]"
+              <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+                <div>
+                  <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
+                    <Sparkles
+                      className="text-[#B266FF] drop-shadow-[0_0_10px_#B266FF]"
+                      size={32}
                     />
-                    <button
-                      onClick={() => {
-                        setImageUrl("");
-                        setAnalysisResult(null);
-                      }}
-                      className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors"
-                    >
-                      ×
-                    </button>
-                  </div>
+                    Smart AI Product Upload
+                  </h1>
+                  <p className="text-gray-400">
+                    Upload an image and let AI analyze your product
+                    automatically
+                  </p>
                 </div>
+              </div>
+            </div>
 
-                {/* Analysis Results */}
-                <div className="space-y-4">
-                  <h3 className="text-lg font-semibold text-white flex items-center gap-2">
-                    <Sparkles size={20} />
-                    AI Analysis
-                  </h3>
+            {/* Main Content */}
+            <div className="bg-gradient-to-br from-[#1A1A1A] to-[#2A2A2A] rounded-xl border border-[#333333] p-6 relative overflow-hidden">
+              <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#00BFFF] to-[#1E90FF]"></div>
 
-                  {analyzing ? (
-                    <div className="bg-[#222222] rounded-lg p-6 border border-[#333333] text-center">
-                      <Loader
-                        className="animate-spin text-[#00BFFF] mx-auto mb-4"
-                        size={32}
-                      />
-                      <p className="text-[#00BFFF] font-medium">
-                        Analyzing your product...
-                      </p>
-                      <p className="text-gray-400 text-sm mt-2">
-                        This may take a few seconds
+              {/* Upload Section */}
+              {!imageUrl && (
+                <div
+                  onDrop={handleDrop}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  className={`relative border-2 border-dashed rounded-xl p-12 text-center transition-all duration-300 cursor-pointer ${
+                    dragActive
+                      ? "border-[#00BFFF] bg-[#00BFFF]/10"
+                      : "border-[#333333] hover:border-[#00BFFF]/50"
+                  }`}
+                  onClick={() =>
+                    document.getElementById("smartImageInput").click()
+                  }
+                >
+                  <input
+                    id="smartImageInput"
+                    type="file"
+                    accept="image/*"
+                    onChange={handleFileSelect}
+                    className="hidden"
+                  />
+
+                  {uploading ? (
+                    <div className="space-y-4">
+                      <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-[#00BFFF] mx-auto"></div>
+                      <p className="text-[#00BFFF] text-lg">
+                        Uploading image...
                       </p>
                     </div>
-                  ) : analysisResult ? (
-                    <div className="bg-[#222222] rounded-lg p-6 border border-[#333333] space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">
-                          Product Name
-                        </label>
-                        <input
-                          type="text"
-                          value={analysisResult.name}
-                          onChange={(e) =>
-                            setAnalysisResult((prev) => ({
-                              ...prev,
-                              name: e.target.value,
-                            }))
-                          }
-                          className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
-                        />
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-gradient-to-br from-[#00BFFF]/20 to-[#1E90FF]/20 rounded-full w-24 h-24 flex items-center justify-center mx-auto">
+                        <Upload className="text-[#00BFFF]" size={48} />
                       </div>
-
                       <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-1">
-                          Description
-                        </label>
-                        <textarea
-                          value={analysisResult.description}
-                          onChange={(e) =>
-                            setAnalysisResult((prev) => ({
-                              ...prev,
-                              description: e.target.value,
-                            }))
-                          }
-                          rows="3"
-                          className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
-                        />
+                        <p className="text-white text-xl font-semibold mb-2">
+                          Drop your product image here
+                        </p>
+                        <p className="text-gray-400">
+                          or{" "}
+                          <span className="text-[#00BFFF]">
+                            click to browse
+                          </span>
+                        </p>
+                        <p className="text-gray-500 text-sm mt-2">
+                          Supports PNG, JPG, GIF up to 10MB
+                        </p>
                       </div>
+                    </div>
+                  )}
+                </div>
+              )}
 
-                      <div className="grid grid-cols-2 gap-3">
+              {/* Analysis Section */}
+              {imageUrl && (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Image Preview */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <ImageIcon size={20} />
+                      Uploaded Image
+                    </h3>
+                    <div className="relative">
+                      <img
+                        src={imageUrl}
+                        alt="Uploaded product"
+                        className="w-full h-64 object-cover rounded-lg border border-[#333333]"
+                      />
+                      <button
+                        onClick={() => {
+                          setImageUrl("");
+                          setAnalysisResult(null);
+                        }}
+                        className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-2 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={18} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Analysis Results */}
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                      <Sparkles size={20} />
+                      AI Analysis
+                    </h3>
+
+                    {analyzing ? (
+                      <div className="bg-[#222222] rounded-lg p-6 border border-[#333333] text-center">
+                        <Loader
+                          className="animate-spin text-[#00BFFF] mx-auto mb-4"
+                          size={32}
+                        />
+                        <p className="text-[#00BFFF] font-medium">
+                          Analyzing your product...
+                        </p>
+                        <p className="text-gray-400 text-sm mt-2">
+                          This may take a few seconds
+                        </p>
+                      </div>
+                    ) : analysisResult ? (
+                      <div className="bg-[#222222] rounded-lg p-6 border border-[#333333] space-y-4">
                         <div>
                           <label className="block text-sm font-medium text-gray-400 mb-1">
-                            Company
+                            Product Name
                           </label>
                           <input
                             type="text"
-                            value={analysisResult.companyName}
+                            value={analysisResult.name}
                             onChange={(e) =>
                               setAnalysisResult((prev) => ({
                                 ...prev,
-                                companyName: e.target.value,
+                                name: e.target.value,
                               }))
                             }
                             className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
@@ -375,30 +402,66 @@ const SmartUpload = () => {
 
                         <div>
                           <label className="block text-sm font-medium text-gray-400 mb-1">
-                            Category
+                            Description
                           </label>
-                          <input
-                            type="text"
-                            value={analysisResult.category}
+                          <textarea
+                            value={analysisResult.description}
                             onChange={(e) =>
                               setAnalysisResult((prev) => ({
                                 ...prev,
-                                category: e.target.value,
+                                description: e.target.value,
                               }))
                             }
+                            rows="3"
                             className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
                           />
                         </div>
-                      </div>
 
-                      {/* Attributes */}
-                      <div>
-                        <label className="block text-sm font-medium text-gray-400 mb-2">
-                          Detected Attributes
-                        </label>
-                        <div className="space-y-2">
-                          {Object.entries(analysisResult.attributes || {}).map(
-                            ([key, value]) => (
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1">
+                              Company
+                            </label>
+                            <input
+                              type="text"
+                              value={analysisResult.companyName}
+                              onChange={(e) =>
+                                setAnalysisResult((prev) => ({
+                                  ...prev,
+                                  companyName: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-400 mb-1">
+                              Category
+                            </label>
+                            <input
+                              type="text"
+                              value={analysisResult.category}
+                              onChange={(e) =>
+                                setAnalysisResult((prev) => ({
+                                  ...prev,
+                                  category: e.target.value,
+                                }))
+                              }
+                              className="w-full px-3 py-2 bg-[#1A1A1A] border border-[#333333] rounded text-white focus:outline-none focus:border-[#00BFFF]"
+                            />
+                          </div>
+                        </div>
+
+                        {/* Attributes */}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-400 mb-2">
+                            Detected Attributes
+                          </label>
+                          <div className="space-y-2">
+                            {Object.entries(
+                              analysisResult.attributes || {}
+                            ).map(([key, value]) => (
                               <div key={key} className="flex gap-2">
                                 <input
                                   type="text"
@@ -432,37 +495,37 @@ const SmartUpload = () => {
                                   className="flex-1 px-2 py-1 bg-[#1A1A1A] border border-[#333333] rounded text-white text-sm"
                                 />
                               </div>
-                            )
-                          )}
+                            ))}
+                          </div>
                         </div>
-                      </div>
 
-                      <button
-                        onClick={handleSaveProduct}
-                        disabled={saving}
-                        className="w-full bg-gradient-to-r from-[#00BFFF] to-[#1E90FF] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg transition-all disabled:opacity-50"
-                      >
-                        {saving ? (
-                          <>
-                            <Loader className="animate-spin" size={16} />
-                            Saving Product...
-                          </>
-                        ) : (
-                          <>
-                            <Sparkles size={16} />
-                            Save AI-Analyzed Product
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  ) : null}
+                        <button
+                          onClick={handleSaveProduct}
+                          disabled={saving}
+                          className="w-full bg-gradient-to-r from-[#00BFFF] to-[#1E90FF] text-white py-3 rounded-lg font-semibold flex items-center justify-center gap-2 hover:shadow-lg transition-all disabled:opacity-50"
+                        >
+                          {saving ? (
+                            <>
+                              <Loader className="animate-spin" size={16} />
+                              Saving Product...
+                            </>
+                          ) : (
+                            <>
+                              <Sparkles size={16} />
+                              Save AI-Analyzed Product
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </>
+    </div>
   );
 };
 

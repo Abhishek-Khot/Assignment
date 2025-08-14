@@ -64,7 +64,7 @@ const Navbar = () => {
                   Smart Upload
                 </Button>
               </Link>
-              <Link to={"/dashboard"}>
+              <Link to={"/dashboard/products"}>
                 <Button
                   type="submit"
                   className="bg-gradient-to-r from-cyan-500 via-blue-500 to-purple-500 px-4 py-2 rounded-md text-white font-semibold shadow-md hover:shadow-lg transition-all duration-300"
