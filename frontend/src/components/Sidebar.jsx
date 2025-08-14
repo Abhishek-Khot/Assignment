@@ -35,18 +35,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       bgColor: "bg-purple-500/10",
     },
     {
-      name: "Smart Upload",
-      icon: Upload,
-      path: "/smart-upload",
-      color: "text-cyan-400",
-      bgColor: "bg-cyan-500/10",
-    },
-    {
       name: "Export History",
       icon: History,
       path: "/dashboard/history",
       color: "text-orange-400",
       bgColor: "bg-orange-500/10",
+    },
+    {
+      name: "Smart Upload",
+      icon: Upload,
+      path: "/smart-upload",
+      color: "text-cyan-400",
+      bgColor: "bg-cyan-500/10",
     },
     {
       name: "Settings",

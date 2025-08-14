@@ -17,7 +17,7 @@ import {
   LineChart,
   Line,
   Area,
-  AreaChart
+  AreaChart,
 } from "recharts";
 import {
   TrendingUp,
@@ -31,7 +31,7 @@ import {
   Activity,
   Users,
   BarChart3,
-  PieChart as PieChartIcon
+  PieChart as PieChartIcon,
 } from "lucide-react";
 
 const Analytics = () => {
@@ -40,23 +40,30 @@ const Analytics = () => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [exportLoading, setExportLoading] = useState(false);
   const [emailModalOpen, setEmailModalOpen] = useState(false);
-  const [exportType, setExportType] = useState('');
-  const [email, setEmail] = useState('');
+  const [exportType, setExportType] = useState("");
+  const [email, setEmail] = useState("");
 
   const navigate = useNavigate();
   const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
-  const COLORS = ['#00BFFF', '#00FF99', '#B266FF', '#FF7F50', '#FFD700', '#FF69B4'];
+  const COLORS = [
+    "#00BFFF",
+    "#00FF99",
+    "#B266FF",
+    "#FF7F50",
+    "#FFD700",
+    "#FF69B4",
+  ];
 
   useEffect(() => {
     const userEmail = localStorage.getItem("email");
     const userId = localStorage.getItem("userId");
-    
+
     if (!userEmail || !userId) {
       navigate("/login");
       return;
     }
-    
+
     setEmail(userEmail);
     fetchAnalytics(userId);
   }, [navigate]);
@@ -65,6 +72,8 @@ const Analytics = () => {
     try {
       setLoading(true);
       const response = await axios.get(`${BACKEND_URL}/analytics/${userId}`);
+      // console.log(`${BACKEND_URL}/analytics/${userId}`);
+      // console.log("response", response.data);
       setAnalyticsData(response.data);
     } catch (error) {
       console.error("Error fetching analytics:", error);
@@ -87,25 +96,29 @@ const Analytics = () => {
     if (!userId) return;
 
     setExportLoading(true);
-    const loadingToast = toast.loading(`Generating ${exportType.toUpperCase()} report...`);
+    const loadingToast = toast.loading(
+      `Generating ${exportType.toUpperCase()} report...`
+    );
 
     try {
       const response = await axios.post(`${BACKEND_URL}/export/${exportType}`, {
         userId,
-        email: email || undefined
+        email: email || undefined,
       });
 
       toast.dismiss(loadingToast);
-      
+
       if (response.data.success) {
-        toast.success(`${exportType.toUpperCase()} report generated successfully!`);
-        
+        toast.success(
+          `${exportType.toUpperCase()} report generated successfully!`
+        );
+
         if (response.data.emailSent) {
           toast.success(`Report sent to ${email}`);
         }
 
         // Trigger download
-        const link = document.createElement('a');
+        const link = document.createElement("a");
         link.href = `${BACKEND_URL}${response.data.downloadUrl}`;
         link.download = response.data.fileName;
         document.body.appendChild(link);
@@ -119,7 +132,7 @@ const Analytics = () => {
     } finally {
       setExportLoading(false);
       setEmailModalOpen(false);
-      setExportType('');
+      setExportType("");
     }
   };
 
@@ -140,7 +153,7 @@ const Analytics = () => {
   return (
     <div className="min-h-screen bg-[#0D0D0D] flex">
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      
+
       <div className="flex-1 lg:ml-0">
         {/* Mobile Header */}
         <div className="lg:hidden bg-[#1A1A1A] border-b border-[#333333] p-4">
@@ -158,21 +171,24 @@ const Analytics = () => {
             <div className="bg-gradient-to-r from-[#1A1A1A] to-[#2A2A2A] rounded-xl border border-[#333333] p-6 relative overflow-hidden">
               <div className="absolute inset-0 bg-gradient-to-r from-[#00BFFF]/10 to-[#B266FF]/10"></div>
               <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#00BFFF] to-[#B266FF]"></div>
-              
+
               <div className="relative flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
                 <div>
                   <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-3">
-                    <BarChart3 className="text-[#00BFFF] drop-shadow-[0_0_10px_#00BFFF]" size={32} />
+                    <BarChart3
+                      className="text-[#00BFFF] drop-shadow-[0_0_10px_#00BFFF]"
+                      size={32}
+                    />
                     Analytics Dashboard
                   </h1>
                   <p className="text-gray-400">
                     Comprehensive insights into your product data
                   </p>
                 </div>
-                
+
                 <div className="flex flex-wrap gap-3">
                   <button
-                    onClick={() => handleExport('pdf')}
+                    onClick={() => handleExport("pdf")}
                     disabled={exportLoading}
                     className="bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-red-500/25 disabled:opacity-50"
                   >
@@ -180,7 +196,7 @@ const Analytics = () => {
                     Export PDF
                   </button>
                   <button
-                    onClick={() => handleExport('excel')}
+                    onClick={() => handleExport("excel")}
                     disabled={exportLoading}
                     className="bg-gradient-to-r from-green-600 to-green-700 hover:from-green-700 hover:to-green-800 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-all shadow-lg hover:shadow-green-500/25 disabled:opacity-50"
                   >
@@ -197,13 +213,20 @@ const Analytics = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-[#00BFFF]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="relative">
                   <div className="flex items-center justify-between mb-4">
-                    <Package className="text-[#00BFFF] drop-shadow-[0_0_10px_#00BFFF]" size={24} />
-                    <div className="text-2xl font-bold text-white">{analyticsData?.totalProducts || 0}</div>
+                    <Package
+                      className="text-[#00BFFF] drop-shadow-[0_0_10px_#00BFFF]"
+                      size={24}
+                    />
+                    <div className="text-2xl font-bold text-white">
+                      {analyticsData?.totalProducts || 0}
+                    </div>
                   </div>
                   <p className="text-gray-400 text-sm">Total Products</p>
                   <div className="flex items-center mt-2">
                     <TrendingUp className="text-green-400 mr-1" size={16} />
-                    <span className="text-green-400 text-sm">+{analyticsData?.growthRate || 0}%</span>
+                    <span className="text-green-400 text-sm">
+                      +{analyticsData?.growthRate || 0}%
+                    </span>
                   </div>
                 </div>
               </div>
@@ -212,8 +235,13 @@ const Analytics = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-[#00FF99]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="relative">
                   <div className="flex items-center justify-between mb-4">
-                    <Building className="text-[#00FF99] drop-shadow-[0_0_10px_#00FF99]" size={24} />
-                    <div className="text-2xl font-bold text-white">{analyticsData?.companiesCount || 0}</div>
+                    <Building
+                      className="text-[#00FF99] drop-shadow-[0_0_10px_#00FF99]"
+                      size={24}
+                    />
+                    <div className="text-2xl font-bold text-white">
+                      {analyticsData?.companiesCount || 0}
+                    </div>
                   </div>
                   <p className="text-gray-400 text-sm">Companies</p>
                   <div className="flex items-center mt-2">
@@ -227,8 +255,13 @@ const Analytics = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-[#B266FF]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="relative">
                   <div className="flex items-center justify-between mb-4">
-                    <Activity className="text-[#B266FF] drop-shadow-[0_0_10px_#B266FF]" size={24} />
-                    <div className="text-2xl font-bold text-white">{analyticsData?.exportHistory?.length || 0}</div>
+                    <Activity
+                      className="text-[#B266FF] drop-shadow-[0_0_10px_#B266FF]"
+                      size={24}
+                    />
+                    <div className="text-2xl font-bold text-white">
+                      {analyticsData?.exportHistory?.length || 0}
+                    </div>
                   </div>
                   <p className="text-gray-400 text-sm">Reports Generated</p>
                   <div className="flex items-center mt-2">
@@ -242,9 +275,15 @@ const Analytics = () => {
                 <div className="absolute inset-0 bg-gradient-to-br from-[#FF7F50]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 <div className="relative">
                   <div className="flex items-center justify-between mb-4">
-                    <BarChart3 className="text-[#FF7F50] drop-shadow-[0_0_10px_#FF7F50]" size={24} />
+                    <BarChart3
+                      className="text-[#FF7F50] drop-shadow-[0_0_10px_#FF7F50]"
+                      size={24}
+                    />
                     <div className="text-2xl font-bold text-white">
-                      {analyticsData?.productsByMonth?.reduce((sum, item) => sum + item.count, 0) || 0}
+                      {analyticsData?.productsByMonth?.reduce(
+                        (sum, item) => sum + item.count,
+                        0
+                      ) || 0}
                     </div>
                   </div>
                   <p className="text-gray-400 text-sm">Last 6 Months</p>
@@ -269,31 +308,45 @@ const Analytics = () => {
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={analyticsData?.productsByMonth || []}>
                       <defs>
-                        <linearGradient id="colorProducts" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="5%" stopColor="#00BFFF" stopOpacity={0.8}/>
-                          <stop offset="95%" stopColor="#00BFFF" stopOpacity={0.1}/>
+                        <linearGradient
+                          id="colorProducts"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#00BFFF"
+                            stopOpacity={0.8}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#00BFFF"
+                            stopOpacity={0.1}
+                          />
                         </linearGradient>
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" stroke="#333333" />
-                      <XAxis 
-                        dataKey="_id.month" 
+                      <XAxis
+                        dataKey="_id.month"
                         stroke="#888888"
                         fontSize={12}
                       />
                       <YAxis stroke="#888888" fontSize={12} />
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{
-                          backgroundColor: '#1A1A1A',
-                          border: '1px solid #333333',
-                          borderRadius: '8px',
-                          color: '#ffffff'
+                          backgroundColor: "#1A1A1A",
+                          border: "1px solid #333333",
+                          borderRadius: "8px",
+                          color: "#ffffff",
                         }}
                       />
-                      <Area 
-                        type="monotone" 
-                        dataKey="count" 
-                        stroke="#00BFFF" 
-                        fillOpacity={1} 
+                      <Area
+                        type="monotone"
+                        dataKey="count"
+                        stroke="#00BFFF"
+                        fillOpacity={1}
                         fill="url(#colorProducts)"
                         strokeWidth={2}
                       />
@@ -321,16 +374,21 @@ const Analytics = () => {
                         dataKey="count"
                         label={({ _id, count }) => `${_id}: ${count}`}
                       >
-                        {(analyticsData?.productsByCompany || []).map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                        ))}
+                        {(analyticsData?.productsByCompany || []).map(
+                          (entry, index) => (
+                            <Cell
+                              key={`cell-${index}`}
+                              fill={COLORS[index % COLORS.length]}
+                            />
+                          )
+                        )}
                       </Pie>
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{
-                          backgroundColor: '#1A1A1A',
-                          border: '1px solid #333333',
-                          borderRadius: '8px',
-                          color: '#ffffff'
+                          backgroundColor: "#1A1A1A",
+                          border: "1px solid #333333",
+                          borderRadius: "8px",
+                          color: "#ffffff",
                         }}
                       />
                     </PieChart>
@@ -350,10 +408,13 @@ const Analytics = () => {
                 </h3>
                 <div className="space-y-4">
                   {(analyticsData?.recentProducts || []).map((product) => (
-                    <div key={product._id} className="flex items-center gap-4 p-3 bg-[#222222] rounded-lg border border-[#333333] hover:border-[#FFD700] transition-all">
+                    <div
+                      key={product._id}
+                      className="flex items-center gap-4 p-3 bg-[#222222] rounded-lg border border-[#333333] hover:border-[#FFD700] transition-all"
+                    >
                       {product.imageUrl ? (
-                        <img 
-                          src={product.imageUrl} 
+                        <img
+                          src={product.imageUrl}
                           alt={product.name}
                           className="w-12 h-12 rounded-lg object-cover border border-[#333333]"
                         />
@@ -363,8 +424,12 @@ const Analytics = () => {
                         </div>
                       )}
                       <div className="flex-1">
-                        <h4 className="text-white font-medium">{product.name}</h4>
-                        <p className="text-gray-400 text-sm">{product.companyName}</p>
+                        <h4 className="text-white font-medium">
+                          {product.name}
+                        </h4>
+                        <p className="text-gray-400 text-sm">
+                          {product.companyName}
+                        </p>
                       </div>
                       <div className="text-gray-400 text-sm">
                         {new Date(product.createdAt).toLocaleDateString()}
@@ -383,18 +448,27 @@ const Analytics = () => {
                 </h3>
                 <div className="space-y-4">
                   {(analyticsData?.exportHistory || []).map((report) => (
-                    <div key={report._id} className="flex items-center gap-4 p-3 bg-[#222222] rounded-lg border border-[#333333] hover:border-[#B266FF] transition-all">
-                      <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                        report.reportType === 'pdf' ? 'bg-red-500/20' : 'bg-green-500/20'
-                      }`}>
-                        {report.reportType === 'pdf' ? (
+                    <div
+                      key={report._id}
+                      className="flex items-center gap-4 p-3 bg-[#222222] rounded-lg border border-[#333333] hover:border-[#B266FF] transition-all"
+                    >
+                      <div
+                        className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                          report.reportType === "pdf"
+                            ? "bg-red-500/20"
+                            : "bg-green-500/20"
+                        }`}
+                      >
+                        {report.reportType === "pdf" ? (
                           <FileText className="text-red-400" size={20} />
                         ) : (
                           <Download className="text-green-400" size={20} />
                         )}
                       </div>
                       <div className="flex-1">
-                        <h4 className="text-white font-medium">{report.fileName}</h4>
+                        <h4 className="text-white font-medium">
+                          {report.fileName}
+                        </h4>
                         <div className="flex items-center gap-2 text-gray-400 text-sm">
                           <span>{report.reportType.toUpperCase()}</span>
                           {report.emailSent && (
@@ -423,12 +497,12 @@ const Analytics = () => {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1A1A1A] rounded-xl border border-[#333333] max-w-md w-full p-6 relative overflow-hidden">
             <div className="absolute top-0 left-0 w-1 h-full bg-gradient-to-b from-[#00BFFF] to-[#B266FF]"></div>
-            
+
             <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
               <Mail className="text-[#00BFFF]" size={20} />
               Export {exportType.toUpperCase()} Report
             </h3>
-            
+
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-400 mb-2">
@@ -445,7 +519,7 @@ const Analytics = () => {
                   Leave empty to download only
                 </p>
               </div>
-              
+
               <div className="flex gap-3">
                 <button
                   onClick={confirmExport}

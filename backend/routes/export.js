@@ -4,123 +4,129 @@ const Product = require("../models/productModel");
 const Report = require("../models/reportModel");
 const User = require("../models/userModel");
 const nodemailer = require("nodemailer");
-const jsPDF = require("jspdf");
-require("jspdf-autotable");
+const PDFDocument = require("pdfkit");
 const XLSX = require("xlsx");
-const fs = require("fs");
-const path = require("path");
+const { Readable } = require("stream");
 
 // Configure nodemailer
-const transporter = nodemailer.createTransporter({
-  service: 'gmail', // or your email service
+const transporter = nodemailer.createTransport({
+  service: "gmail",
   auth: {
     user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  }
+    pass: process.env.EMAIL_PASS,
+  },
 });
 
-// Export products to PDF
+// Helper function to convert buffer to stream
+const bufferToStream = (buffer) => {
+  const stream = new Readable();
+  stream.push(buffer);
+  stream.push(null);
+  return stream;
+};
+
+// Export products to PDF using PDFKit
 router.post("/export/pdf", async (req, res) => {
   try {
     const { userId, email, includeImages = false } = req.body;
-    
+
     const user = await User.findById(userId);
     const products = await Product.find({ userId }).sort({ createdAt: -1 });
-    
+
     if (!user || products.length === 0) {
       return res.status(404).json({ error: "No data found" });
     }
 
-    // Create PDF
-    const doc = new jsPDF();
-    
-    // Header with logo and title
-    doc.setFontSize(24);
-    doc.setTextColor(0, 191, 255);
-    doc.text("TransparentAI", 20, 25);
-    
-    doc.setFontSize(18);
-    doc.setTextColor(0, 0, 0);
-    doc.text("Products Report", 20, 40);
-    
+    // Create PDF document
+    const doc = new PDFDocument({
+      size: "A4",
+      margin: 50,
+      bufferPages: true,
+    });
+
+    const fileName = `products-report-${Date.now()}.pdf`;
+
+    // Collect PDF data in memory
+    const chunks = [];
+    doc.on("data", (chunk) => chunks.push(chunk));
+
+    // Header
+    doc.fillColor("#00BFFF").fontSize(24).text("TransparentAI", 50, 50);
+    doc.fillColor("#000000").fontSize(18).text("Products Report", 50, 85);
+
     // User info
-    doc.setFontSize(12);
-    doc.text(`Generated for: ${user.name}`, 20, 55);
-    doc.text(`Email: ${user.email}`, 20, 65);
-    doc.text(`Company: ${user.company}`, 20, 75);
-    doc.text(`Generated on: ${new Date().toLocaleDateString()}`, 20, 85);
-    doc.text(`Total Products: ${products.length}`, 20, 95);
+    doc
+      .fontSize(12)
+      .text(`Generated for: ${user.name}`, 50, 120)
+      .text(`Email: ${user.email}`, 50, 140)
+      .text(`Company: ${user.company}`, 50, 160)
+      .text(`Generated on: ${new Date().toLocaleDateString()}`, 50, 180)
+      .text(`Total Products: ${products.length}`, 50, 200);
 
-    // Add line separator
-    doc.setDrawColor(0, 191, 255);
-    doc.line(20, 105, 190, 105);
+    // Line separator
+    doc.moveTo(50, 220).lineTo(550, 220).strokeColor("#00BFFF").stroke();
 
-    // Products table
-    const tableData = products.map((product, index) => [
-      index + 1,
-      product.name,
-      product.companyName,
-      product.description || "N/A",
-      new Date(product.createdAt).toLocaleDateString(),
-      Object.keys(product.attributes || {}).length
-    ]);
+    // Table headers
+    const tableHeaders = ["#", "Product", "Company", "Created", "Attributes"];
+    const columnPositions = [50, 100, 250, 400, 500];
+    let yPosition = 240;
 
-    doc.autoTable({
-      head: [["#", "Product Name", "Company", "Description", "Created Date", "Attributes"]],
-      body: tableData,
-      startY: 115,
-      styles: { 
-        fontSize: 9, 
-        cellPadding: 3,
-        overflow: 'linebreak',
-        columnWidth: 'wrap'
-      },
-      headStyles: { 
-        fillColor: [0, 191, 255], 
-        textColor: [255, 255, 255],
-        fontStyle: 'bold'
-      },
-      alternateRowStyles: { fillColor: [245, 245, 245] },
-      columnStyles: {
-        0: { cellWidth: 15 },
-        1: { cellWidth: 35 },
-        2: { cellWidth: 30 },
-        3: { cellWidth: 50 },
-        4: { cellWidth: 25 },
-        5: { cellWidth: 20 }
-      }
+    // Header row
+    doc.font("Helvetica-Bold");
+    tableHeaders.forEach((header, i) => {
+      doc.text(header, columnPositions[i], yPosition);
+    });
+
+    // Table rows
+    doc.font("Helvetica");
+    products.forEach((product, index) => {
+      yPosition += 25;
+
+      const rowData = [
+        index + 1,
+        product.name,
+        product.companyName,
+        new Date(product.createdAt).toLocaleDateString(),
+        Object.keys(product.attributes || {}).length,
+      ];
+
+      rowData.forEach((cell, i) => {
+        doc.text(cell.toString(), columnPositions[i], yPosition);
+      });
+
+      // Add horizontal line
+      doc
+        .moveTo(50, yPosition + 15)
+        .lineTo(550, yPosition + 15)
+        .strokeColor("#CCCCCC")
+        .stroke();
     });
 
     // Footer
-    const pageCount = doc.internal.getNumberOfPages();
-    for (let i = 1; i <= pageCount; i++) {
-      doc.setPage(i);
-      doc.setFontSize(8);
-      doc.setTextColor(128, 128, 128);
-      doc.text(`Page ${i} of ${pageCount}`, 170, 285);
-      doc.text("Generated by TransparentAI", 20, 285);
-    }
+    doc
+      .fontSize(10)
+      .fillColor("#808080")
+      .text("Generated by TransparentAI", 50, 750, { align: "left" })
+      .text(`Page 1 of 1`, 50, 750, { align: "right" });
 
-    const fileName = `products-report-${Date.now()}.pdf`;
-    const filePath = path.join(__dirname, '../uploads', fileName);
-    
-    // Ensure uploads directory exists
-    if (!fs.existsSync(path.join(__dirname, '../uploads'))) {
-      fs.mkdirSync(path.join(__dirname, '../uploads'), { recursive: true });
-    }
+    // Finalize PDF
+    doc.end();
 
-    // Save PDF
-    fs.writeFileSync(filePath, doc.output());
+    // Wait for PDF to finish
+    const pdfBuffer = await new Promise((resolve) => {
+      doc.on("end", () => {
+        const buffer = Buffer.concat(chunks);
+        resolve(buffer);
+      });
+    });
 
-    // Create report record
+    // Create report record without file path
     const report = new Report({
       userId,
-      products: products.map(p => p._id),
-      reportType: 'pdf',
+      products: products.map((p) => p._id),
+      reportType: "pdf",
       fileName,
-      pdfUrl: `/uploads/${fileName}`,
-      fileSize: fs.statSync(filePath).size,
-      status: 'completed'
+      status: "completed",
     });
 
     // Send email if requested
@@ -128,7 +134,7 @@ router.post("/export/pdf", async (req, res) => {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
-        subject: 'Your Products Report - TransparentAI',
+        subject: "Your Products Report - TransparentAI",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #00BFFF, #1E90FF); padding: 20px; text-align: center;">
@@ -149,10 +155,12 @@ router.post("/export/pdf", async (req, res) => {
             </div>
           </div>
         `,
-        attachments: [{
-          filename: fileName,
-          path: filePath
-        }]
+        attachments: [
+          {
+            filename: fileName,
+            content: pdfBuffer,
+          },
+        ],
       };
 
       await transporter.sendMail(mailOptions);
@@ -162,14 +170,13 @@ router.post("/export/pdf", async (req, res) => {
 
     await report.save();
 
-    res.json({
-      success: true,
-      fileName,
-      downloadUrl: `/uploads/${fileName}`,
-      reportId: report._id,
-      emailSent: !!email
+    // Send response with download option
+    res.set({
+      "Content-Type": "application/pdf",
+      "Content-Disposition": `attachment; filename=${fileName}`,
+      "Content-Length": pdfBuffer.length,
     });
-
+    res.send(pdfBuffer);
   } catch (err) {
     console.error("Export PDF error:", err);
     res.status(500).json({ error: err.message });
@@ -180,64 +187,59 @@ router.post("/export/pdf", async (req, res) => {
 router.post("/export/excel", async (req, res) => {
   try {
     const { userId, email } = req.body;
-    
+
     const user = await User.findById(userId);
     const products = await Product.find({ userId }).sort({ createdAt: -1 });
-    
+
     if (!user || products.length === 0) {
       return res.status(404).json({ error: "No data found" });
     }
 
     // Create workbook
     const workbook = XLSX.utils.book_new();
-    
+
     // Products sheet
     const productsData = products.map((product, index) => ({
-      'S.No': index + 1,
-      'Product Name': product.name,
-      'Company': product.companyName,
-      'Description': product.description || 'N/A',
-      'Created Date': new Date(product.createdAt).toLocaleDateString(),
-      'Attributes Count': Object.keys(product.attributes || {}).length,
-      'Image URL': product.imageUrl || 'N/A'
+      "S.No": index + 1,
+      "Product Name": product.name,
+      Company: product.companyName,
+      Description: product.description || "N/A",
+      "Created Date": new Date(product.createdAt).toLocaleDateString(),
+      "Attributes Count": Object.keys(product.attributes || {}).length,
+      "Image URL": product.imageUrl || "N/A",
     }));
 
     const productsSheet = XLSX.utils.json_to_sheet(productsData);
-    XLSX.utils.book_append_sheet(workbook, productsSheet, 'Products');
+    XLSX.utils.book_append_sheet(workbook, productsSheet, "Products");
 
     // Summary sheet
-    const companies = [...new Set(products.map(p => p.companyName))];
+    const companies = [...new Set(products.map((p) => p.companyName))];
     const summaryData = [
-      { 'Metric': 'Total Products', 'Value': products.length },
-      { 'Metric': 'Total Companies', 'Value': companies.length },
-      { 'Metric': 'Report Generated', 'Value': new Date().toLocaleDateString() },
-      { 'Metric': 'User Name', 'Value': user.name },
-      { 'Metric': 'User Email', 'Value': user.email }
+      { Metric: "Total Products", Value: products.length },
+      { Metric: "Total Companies", Value: companies.length },
+      { Metric: "Report Generated", Value: new Date().toLocaleDateString() },
+      { Metric: "User Name", Value: user.name },
+      { Metric: "User Email", Value: user.email },
     ];
 
     const summarySheet = XLSX.utils.json_to_sheet(summaryData);
-    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Summary");
 
     const fileName = `products-report-${Date.now()}.xlsx`;
-    const filePath = path.join(__dirname, '../uploads', fileName);
-    
-    // Ensure uploads directory exists
-    if (!fs.existsSync(path.join(__dirname, '../uploads'))) {
-      fs.mkdirSync(path.join(__dirname, '../uploads'), { recursive: true });
-    }
 
-    // Save Excel file
-    XLSX.writeFile(workbook, filePath);
+    // Generate Excel file in memory
+    const excelBuffer = XLSX.write(workbook, {
+      type: "buffer",
+      bookType: "xlsx",
+    });
 
-    // Create report record
+    // Create report record without file path
     const report = new Report({
       userId,
-      products: products.map(p => p._id),
-      reportType: 'excel',
+      products: products.map((p) => p._id),
+      reportType: "excel",
       fileName,
-      pdfUrl: `/uploads/${fileName}`,
-      fileSize: fs.statSync(filePath).size,
-      status: 'completed'
+      status: "completed",
     });
 
     // Send email if requested
@@ -245,7 +247,7 @@ router.post("/export/excel", async (req, res) => {
       const mailOptions = {
         from: process.env.EMAIL_USER,
         to: email,
-        subject: 'Your Products Report (Excel) - TransparentAI',
+        subject: "Your Products Report (Excel) - TransparentAI",
         html: `
           <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
             <div style="background: linear-gradient(135deg, #00BFFF, #1E90FF); padding: 20px; text-align: center;">
@@ -267,10 +269,12 @@ router.post("/export/excel", async (req, res) => {
             </div>
           </div>
         `,
-        attachments: [{
-          filename: fileName,
-          path: filePath
-        }]
+        attachments: [
+          {
+            filename: fileName,
+            content: excelBuffer,
+          },
+        ],
       };
 
       await transporter.sendMail(mailOptions);
@@ -280,14 +284,14 @@ router.post("/export/excel", async (req, res) => {
 
     await report.save();
 
-    res.json({
-      success: true,
-      fileName,
-      downloadUrl: `/uploads/${fileName}`,
-      reportId: report._id,
-      emailSent: !!email
+    // Send response with download option
+    res.set({
+      "Content-Type":
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "Content-Disposition": `attachment; filename=${fileName}`,
+      "Content-Length": excelBuffer.length,
     });
-
+    res.send(excelBuffer);
   } catch (err) {
     console.error("Export Excel error:", err);
     res.status(500).json({ error: err.message });
@@ -299,9 +303,9 @@ router.get("/export/history/:userId", async (req, res) => {
   try {
     const { userId } = req.params;
     const reports = await Report.find({ userId })
-      .populate('products', 'name')
+      .populate("products", "name")
       .sort({ createdAt: -1 });
-    
+
     res.json(reports);
   } catch (err) {
     res.status(400).json({ error: err.message });

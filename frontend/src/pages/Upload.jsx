@@ -16,8 +16,8 @@ const Upload = () => {
   const navigate = useNavigate();
 
   // Cloudinary configuration
-  const CLOUD_NAME = "dvaemcnki";
-  const UPLOAD_PRESET = "product_images"; // Replace with your actual upload preset
+  const CLOUD_NAME = import.meta.env.VITE_CLOUD_NAME;
+  const UPLOAD_PRESET = import.meta.env.VITE_UPLOAD_PRESET;
 
   const handleImageUpload = async (file) => {
     if (!file) return;
@@ -51,7 +51,9 @@ const Upload = () => {
         toast.success("Image uploaded successfully!");
       } else {
         toast.dismiss(loadingToast);
-        toast.error("Upload failed! Please check your upload preset configuration.");
+        toast.error(
+          "Upload failed! Please check your upload preset configuration."
+        );
       }
     } catch (err) {
       console.error("Upload error:", err);

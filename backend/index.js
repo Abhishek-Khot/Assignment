@@ -8,16 +8,27 @@ app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
-const corsOptions = {
-  origin: [
-    process.env.FRONTEND_URL,
-    "http://localhost:5173",
-    // "https://smartrecruit.vercel.app", // for quick testing purpose included this hardcoded urls
-  ],
-  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
-  allowedHeaders: ["Content-Type", "Authorization", "multipart/form-data"],
-};
-app.use(cors(corsOptions));
+// const corsOptions = {
+//   origin: [
+//     process.env.FRONTEND_URL,
+//     "http://localhost:5173",
+//     // "https://smartrecruit.vercel.app", // for quick testing purpose included this hardcoded urls
+//   ],
+//   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+//   allowedHeaders: ["Content-Type", "Authorization", "multipart/form-data"],
+// };
+// app.use(cors(corsOptions));
+
+app.use(
+  cors({
+    origin: [
+      process.env.FRONTEND_URL,
+      "http://localhost:5173",
+      // "https://smartrecruit.vercel.app", // for quick testing purpose included this hardcoded urls
+    ],
+    credentials: true,
+  })
+);
 
 // Connect to MongoDB
 main()
@@ -74,7 +85,7 @@ app.use(analyticsRoutes);
 app.use(exportRoutes);
 
 // Serve static files from uploads directory
-app.use('/uploads', express.static('uploads'));
+app.use("/uploads", express.static("uploads"));
 // Test route for users
 app.get("/", async (req, res) => {
   try {
